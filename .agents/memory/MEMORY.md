@@ -1,0 +1,1 @@
+- [Business access boundaries](business-access-boundaries.md) — never infer staff privileges; only server-validated ownership grants access unless membership is modeled.

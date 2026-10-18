@@ -1,0 +1,309 @@
+# Senior Software Engineer Task: Fix and Upgrade the Existing Authentication System
+
+Act as a senior full-stack software engineer, authentication specialist, backend security engineer, and UI/UX designer.
+
+Thoroughly inspect the existing application, identify the root causes of authentication bugs, and implement, improve, and test the authentication system. Focus exclusively on login, registration, OTP verification, business account authentication, and related authentication security.
+
+## Critical Instructions
+
+- Do not rebuild the entire application.
+- Do not replace working systems unnecessarily.
+- Preserve all existing features, business logic, database records, API integrations, AI functionality, demo payment systems, and page designs outside the authentication module.
+- **OTP MUST operate in DEMO MODE ONLY.**
+- Generate a new random six-digit OTP code for each verification request.
+- Never use a permanently fixed OTP code such as `123456`.
+- Display the generated demo code directly on the OTP verification screen.
+- Do not send real SMS messages or require a paid SMS provider.
+- Keep all authentication changes compatible with the existing project architecture.
+
+## 1. Dynamic Demo OTP Phone Authentication
+
+Implement a fully functional Dynamic Demo OTP verification system.
+
+### Phone Number Input
+
+- Support Uzbek phone numbers using the format `+998 (90) 123-45-67`.
+- Validate phone numbers before allowing users to continue.
+- Normalize phone numbers consistently before account lookup or storage.
+- Prevent incomplete, invalid, or incorrectly formatted phone numbers from proceeding.
+- Provide clear, user-friendly validation messages.
+
+### Dynamic OTP Generation
+
+1. Generate a new random six-digit numeric OTP code whenever a user requests verification.
+2. Generate another new code whenever the user requests a resend.
+3. Use a cryptographically secure random number generator on the backend whenever supported by the existing architecture.
+4. Never use a permanently hardcoded OTP code.
+5. Ensure every newly generated code differs from the immediately previous code for that verification session. If the generated code matches the previous code, generate another one.
+6. Generate and validate codes through the existing backend or authentication infrastructure whenever possible.
+7. Do not rely solely on frontend JavaScript to authenticate users.
+8. Bind every code to the correct normalized phone number and verification session.
+9. Prevent codes issued for one phone number or session from verifying another.
+10. Store and manage verification state securely using the existing infrastructure. Avoid storing plaintext OTP codes in persistent storage when secure alternatives are available.
+
+### Displaying the Demo OTP
+
+Because this application uses Demo OTP mode, display the generated code clearly on the verification screen.
+
+Example:
+
+`DEMO MODE | Your verification code: 482731`
+
+Requirements:
+
+- The displayed code must exactly match the code validated by the backend.
+- Update the displayed code whenever a new OTP is generated.
+- Clearly identify the flow as a demonstration.
+- Do not claim that an SMS has been sent or delivered.
+- Do not require a real SMS provider, SMS API key, or paid messaging service.
+- Keep the OTP interface clean, responsive, and consistent with the application's existing design.
+
+### OTP Input Interface
+
+Implement six separate OTP input boxes with:
+
+- Automatic focus movement between boxes.
+- Support for pasting the entire six-digit code.
+- Correct backspace and keyboard navigation.
+- Numeric input and mobile-friendly keyboards.
+- Clear focus indicators and accessible labels.
+- Automatic submission only when appropriate and without creating duplicate requests.
+- Clear visual feedback for loading, success, incorrect codes, expired codes, and errors.
+
+### OTP Expiration and Countdown
+
+- Set the default OTP validity period to 60 seconds.
+- Display an accurate countdown timer on the verification screen.
+- Reject expired codes on the backend, regardless of frontend timer state.
+- Disable or restrict verification after expiration.
+- Show a clear message when a code expires.
+- Allow the user to request a new code when permitted.
+
+### Resend OTP Behavior
+
+Implement a functional resend-code process.
+
+- Start a 60-second resend countdown after a successful code-generation request.
+- Prevent resend requests while the countdown is active.
+- When a resend is permitted, generate a new six-digit code.
+- Ensure the new code differs from the immediately previous code for the same verification session.
+- Immediately invalidate the previous code when the new code is issued.
+- Reset the validity timer and update the displayed demo code.
+- Prevent duplicate resend requests and excessive requests.
+- Handle failed requests gracefully without displaying a code that the backend did not successfully issue.
+
+### OTP Verification Rules
+
+- Accept only valid six-digit codes associated with the correct phone number and verification session.
+- Reject incorrect codes.
+- Reject expired codes.
+- Reject previously used codes.
+- Invalidate the code immediately after successful verification.
+- Prevent OTP replay, reuse, expiration bypasses, and duplicate verification requests.
+- Enforce reasonable verification-attempt and resend limits on the backend.
+- Handle concurrent requests safely so that only the current valid code can be accepted.
+- Display understandable error messages without exposing sensitive internal information.
+
+### Demo Mode Security Limitations
+
+This is a demonstration system, not production-grade identity verification.
+
+- Clearly label all demo verification screens.
+- Never represent a displayed demo code as proof of real-world identity.
+- Do not silently switch between demo and production authentication.
+- Do not allow demo OTP behavior to bypass production authentication controls.
+- Keep the demo verification logic separate from any existing production authentication configuration.
+
+## 2. User Registration and Account Retrieval
+
+After successful Demo OTP verification:
+
+- Retrieve the existing account associated with the verified phone number.
+- If registration is appropriate, create the account through the existing registration process.
+- Prevent duplicate accounts and duplicate phone-number identities.
+- Preserve existing account IDs, profile information, user settings, orders, and related database records.
+- Establish an authenticated session using the existing authentication provider or backend.
+- Redirect the user to the appropriate existing application page.
+- Do not create duplicate users when the same phone number is verified again.
+- Do not treat successful demo verification as proof of real-world identity.
+
+## 3. Business Account Authentication
+
+Implement or repair the existing business account authentication flow.
+
+- Provide a clear option to sign in as a business account.
+- Allow business users to authenticate using their registered phone number and Dynamic Demo OTP or their existing configured login credentials, depending on the current authentication architecture.
+- Reuse the existing business authentication and registration systems wherever possible.
+- Associate each business account with the correct business profile and database record.
+- Validate required business information.
+- Prevent duplicate business accounts and unauthorized account linking.
+- Redirect authenticated business owners and authorized staff to the existing business dashboard.
+- Preserve existing business profiles, permissions, orders, settings, and related records.
+- Ensure that one business account cannot access another business's private data.
+- Do not automatically grant business privileges to ordinary customers.
+- Assign and verify business roles exclusively through trusted backend logic.
+- Verify staff permissions and business ownership before granting access to protected business resources.
+
+## 4. Username, Email, and Password Authentication
+
+Repair and improve the existing login and registration forms.
+
+- Preserve the login identifiers already supported by the application, including username, email, or phone number where applicable.
+- Validate required fields and show clear, user-friendly error messages.
+- Implement secure password verification using the existing authentication provider or backend.
+- Add password visibility controls.
+- Repair the existing forgot-password and password-reset flow if supported.
+- Ensure registration creates valid accounts and prevents duplicate identities.
+- Add loading states and prevent repeated form submissions.
+- Handle invalid credentials, network errors, expired sessions, and unexpected responses gracefully.
+- Never store plaintext passwords or expose authentication secrets in frontend code.
+- Do not introduce a new authentication provider before inspecting the existing architecture, including Clerk, Firebase, Supabase, or a custom backend.
+
+## 5. Authentication Routing and User Roles
+
+Inspect the existing roles, routes, and permissions. Preserve the current role system.
+
+After successful authentication, redirect users to their existing destinations:
+
+- Regular customer → existing customer home page.
+- Business owner or authorized business staff → existing business dashboard.
+- Authorized administrator → existing admin dashboard.
+
+Requirements:
+
+- Protect private routes on both the frontend and backend.
+- Do not rely on frontend-only role checks or redirects for security.
+- Prevent unauthenticated users from accessing protected pages through direct URLs.
+- Prevent unauthorized users from accessing administrator or business-only resources.
+- Preserve the existing authorization model and avoid unnecessary role changes.
+- Handle session expiration and logout correctly.
+
+## 6. Professional Authentication UI/UX
+
+Upgrade only the authentication-related screens.
+
+- Create a modern, premium, responsive interface.
+- Ensure excellent usability on desktop, tablets, and mobile devices.
+- Keep phone-number entry, OTP verification, password forms, and business login simple and intuitive.
+- Provide clear navigation between existing login and registration options.
+- Add accessible labels, keyboard navigation, appropriate focus states, and readable validation messages.
+- Prevent layout shifts, broken input fields, overlapping elements, and unnecessary redirects.
+- Match the application's existing branding, colors, typography, and design system.
+- Display the Demo OTP code and DEMO MODE label clearly without confusing users into thinking a real SMS was sent.
+- Avoid redesigning unrelated pages or changing the existing application's visual identity unnecessarily.
+
+## 7. Security and Backend Validation
+
+Audit the authentication flow for security weaknesses.
+
+- Validate all authentication requests on the server.
+- Use secure session management and the existing authentication provider's recommended token-handling practices.
+- Apply rate limiting and appropriate OTP attempt limits.
+- Prevent brute-force attempts, code replay, reuse, and expiration bypasses.
+- Protect password-reset and account-recovery endpoints.
+- Keep API keys, secrets, and privileged operations on the server.
+- Enforce role-based access control and business-level data isolation.
+- Handle database failures, API errors, expired sessions, and unexpected responses gracefully.
+- Do not implement authentication solely through frontend state or localStorage.
+- Do not bypass backend authentication to make the interface appear functional.
+- Clearly document that displayed demo codes are not suitable for real identity verification.
+
+## 8. Preserve Existing Demo Payment Systems and AI Functionality
+
+The application already contains demo payment functionality and AI-related features. Preserve them.
+
+- Do not delete, replace, or break existing demo payment methods, payment screens, checkout flows, payment records, or payment-related business rules.
+- Do not initiate real payment charges or real payment-provider requests as part of Demo OTP verification.
+- Do not mark a payment as successful merely because authentication succeeded.
+- Preserve existing payment statuses, API integrations, and database records.
+- Preserve existing AI features, AI API integrations, business logic, and application functionality.
+- Do not expose AI API keys or other private credentials.
+- Keep authentication changes independent of payment and AI modules unless a minimal compatibility fix is genuinely required.
+- If another module must be modified, explain why and test the affected functionality.
+
+## 9. Testing and Verification
+
+Test the entire authentication system from beginning to end.
+
+### Dynamic Demo OTP Tests
+
+1. Valid and invalid Uzbek phone numbers.
+2. Generation of a new six-digit OTP for each new verification request.
+3. New code generation on resend.
+4. Ensuring the new code differs from the previous code in the same verification session.
+5. Immediate invalidation of the previous code after resend.
+6. Correct OTP verification.
+7. Incorrect OTP rejection.
+8. OTP expiration after 60 seconds.
+9. Rejection of expired codes.
+10. Prevention of code reuse after successful verification.
+11. Phone-number and verification-session matching.
+12. Resend countdown and resend limits.
+13. Verification-attempt limits.
+14. Prevention of duplicate requests and concurrent verification problems.
+15. Confirmation that the displayed demo code matches the backend's active code.
+16. Confirmation that no real SMS is sent.
+
+### Authentication Tests
+
+17. Successful and failed login with existing credentials.
+18. Registration and duplicate-account prevention.
+19. Password reset, where supported.
+20. Business account authentication and correct dashboard access.
+21. Correct role-based redirects.
+22. Protected routes and unauthorized access attempts.
+23. Session persistence and logout.
+24. Desktop and mobile responsiveness.
+25. Existing database compatibility.
+26. Existing demo payment functionality.
+27. Existing AI features and API integrations.
+28. Regression testing for unrelated application functionality.
+
+Fix discovered bugs rather than merely reporting them. Do not replace working backend functionality with mock responses or localStorage-only authentication.
+
+## 10. Implementation Requirements
+
+Before making changes:
+
+- Inspect the complete project structure.
+- Identify the existing authentication provider and backend implementation.
+- Inspect the database schema, API endpoints, environment variables, routes, and authentication components.
+- Determine how existing user accounts, business accounts, sessions, and roles are stored and managed.
+- Identify the root causes of authentication failures.
+- Reuse existing components and infrastructure wherever possible.
+
+Then implement the fixes directly in the existing project.
+
+- Do not create duplicate authentication systems.
+- Do not add unnecessary database tables or unrelated features.
+- Do not delete existing users, business records, payment records, or other application data.
+- Use database migrations only when necessary and preserve existing data.
+- Keep changes focused on the authentication module.
+- Run available tests, type checks, linting, and build commands.
+- Fix errors introduced by the changes.
+- Do not claim tests passed unless they were actually executed.
+- Clearly report any features that could not be tested or verified.
+
+## 11. Final Deliverables
+
+Provide a concise implementation report containing:
+
+- Root causes identified.
+- Files and components modified.
+- Dynamic Demo OTP implementation details.
+- Login, registration, and business authentication flows implemented.
+- Tests performed and their actual results.
+- Required environment variables or configuration changes.
+- Remaining limitations and security considerations.
+
+## Definition of Done
+
+The existing application's login, registration, Dynamic Demo OTP, and business account authentication flows work correctly and consistently.
+
+Every OTP request generates a fresh, random six-digit code. Each new code differs from the previous code in the same verification session, expires after 60 seconds, and becomes invalid immediately when a replacement code is issued. Codes are bound to the correct phone number and session, and successful verification invalidates the code.
+
+The generated demo code is clearly displayed on screen, no real SMS is sent, and the system does not misrepresent demo verification as production-grade identity verification.
+
+Existing demo payment systems, AI functionality, API integrations, business logic, database records, user accounts, and all unrelated features remain intact.
+
+**Final instruction:** Inspect the actual project, implement the changes directly in the existing codebase, and verify the results. Do not merely provide recommendations, sample code, or a proposed implementation plan. Preserve every unrelated existing feature.

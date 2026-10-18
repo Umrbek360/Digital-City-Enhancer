@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Digital City",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon_2.png",
+    "scheme": "digital-city",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "uz.digitalcity.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "uz.digitalcity.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon_2.png",
+        "backgroundColor": "#123A35"
+      }
+    },
+    "web": {
+      "favicon": "./assets/images/icon_2.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      ["expo-notifications", { "icon": "./assets/images/icon_2.png", "color": "#123A35" }],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/icon_2.png",
+          "imageWidth": 112,
+          "backgroundColor": "#F5F8F7"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

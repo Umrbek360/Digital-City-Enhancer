@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Digital City business accounts and administration API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: businesses
+    description: Public business listings and business-owner accounts
+  - name: authentication
+    description: Development-only demo authentication
+  - name: administration
+    description: Administrator-only business review operations
+  - name: bookings
+    description: Customer appointment requests and business responses
+  - name: notifications
+    description: Per-device push notification registration
 paths:
   /healthz:
     get:
@@ -24,13 +34,775 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /account/me:
+    get:
+      operationId: getCurrentAccount
+      tags: [businesses]
+      summary: Get the signed-in account
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Current authenticated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          description: Sign-in required
+  /auth/demo-otp/request:
+    post:
+      operationId: requestDemoOtp
+      tags: [authentication]
+      summary: Request a development demo OTP
+      description: Generates a six-digit, 60-second demo code without sending SMS. Resends must use the active verification session. This operation is available only in development.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoOtpRequestBody"
+      responses:
+        "200":
+          description: Demo code issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpRequestResponse"
+        "400":
+          description: Invalid phone number or verification session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+        "404":
+          description: Demo OTP is disabled outside development
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+        "429":
+          description: Request rate limit or resend cooldown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+  /auth/demo-otp/verify:
+    post:
+      operationId: verifyDemoOtp
+      tags: [authentication]
+      summary: Verify a development demo OTP and create a Clerk session
+      description: Accepts only the current, unexpired code for the matching phone and verification session, then activates the single existing Clerk account with the matching verified phone number. Available only in development.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoOtpVerifyBody"
+      responses:
+        "200":
+          description: Code verified and existing account session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpVerifyResponse"
+        "400":
+          description: Invalid request or code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+        "404":
+          description: Demo OTP is disabled or no matching account exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+        "409":
+          description: Phone number is associated with multiple accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+        "410":
+          description: Code expired or was already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+        "429":
+          description: Verification attempt rate limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoOtpError"
+  /businesses:
+    get:
+      operationId: listPublicBusinesses
+      tags: [businesses]
+      summary: List approved businesses
+      responses:
+        "200":
+          description: Approved businesses visible in the customer app
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicBusinessList"
+    post:
+      operationId: createBusiness
+      tags: [businesses]
+      summary: Submit a business for review
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessInput"
+      responses:
+        "201":
+          description: Business submitted for approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRecord"
+        "401":
+          description: Sign-in required
+        "409":
+          description: This account already has a business application
+  /businesses/mine:
+    get:
+      operationId: listMyBusinesses
+      tags: [businesses]
+      summary: List businesses owned by the signed-in account
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Businesses owned by the signed-in account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRecordList"
+        "401":
+          description: Sign-in required
+  /bookings:
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Send an appointment request to an approved business
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Appointment request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRecord"
+        "400":
+          description: Invalid request or appointment date
+        "401":
+          description: Sign-in required
+        "403":
+          description: Email verification required or business owner cannot book their own listing
+        "404":
+          description: Approved business not found
+  /bookings/mine:
+    get:
+      operationId: listMyBookings
+      tags: [bookings]
+      summary: List appointment requests made by the signed-in customer
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Customer appointment requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRecordList"
+        "401":
+          description: Sign-in required
+  /business-bookings:
+    get:
+      operationId: listBusinessBookings
+      tags: [bookings]
+      summary: List appointment requests for businesses owned by the signed-in account
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Requests received by the signed-in business owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRecordList"
+        "401":
+          description: Sign-in required
+  /business-bookings/{bookingId}/status:
+    patch:
+      operationId: updateBookingStatus
+      tags: [bookings]
+      summary: Accept or decline a pending appointment request
+      security:
+        - clerkSession: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingStatusChange"
+      responses:
+        "200":
+          description: Appointment request status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRecord"
+        "401":
+          description: Sign-in required
+        "404":
+          description: Appointment request not found
+        "409":
+          description: Only pending requests can be changed
+  /push-tokens:
+    post:
+      operationId: registerPushToken
+      tags: [notifications]
+      summary: Register this device for account notifications
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushTokenInput"
+      responses:
+        "200":
+          description: Device token registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushTokenRegistration"
+        "400":
+          description: Invalid push token
+        "401":
+          description: Sign-in required
+    delete:
+      operationId: unregisterPushToken
+      tags: [notifications]
+      summary: Stop notifications on this device
+      security:
+        - clerkSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushTokenDeleteInput"
+      responses:
+        "200":
+          description: Device token removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushTokenDeletion"
+        "401":
+          description: Sign-in required
+  /businesses/{businessId}:
+    get:
+      operationId: getPublicBusiness
+      tags: [businesses]
+      summary: Get an approved public business
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approved public business
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicBusiness"
+        "404":
+          description: Business not found
+    patch:
+      operationId: updateMyBusiness
+      tags: [businesses]
+      summary: Update a business owned by the signed-in account
+      security:
+        - clerkSession: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessUpdate"
+      responses:
+        "200":
+          description: Updated business; approved listings return to review after changes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRecord"
+        "401":
+          description: Sign-in required
+        "404":
+          description: Business not found
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [administration]
+      summary: Get business review totals and recent submissions
+      security:
+        - clerkSession: []
+      responses:
+        "200":
+          description: Admin summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "401":
+          description: Sign-in required
+        "403":
+          description: Administrator access required
+  /admin/businesses:
+    get:
+      operationId: listAdminBusinesses
+      tags: [administration]
+      summary: List businesses for admin review
+      security:
+        - clerkSession: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/BusinessStatus"
+      responses:
+        "200":
+          description: Business applications and listings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRecordList"
+        "401":
+          description: Sign-in required
+        "403":
+          description: Administrator access required
+  /admin/businesses/{businessId}/review:
+    patch:
+      operationId: reviewBusiness
+      tags: [administration]
+      summary: Approve or reject a business application
+      security:
+        - clerkSession: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessReview"
+      responses:
+        "200":
+          description: Review decision saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRecord"
+        "401":
+          description: Sign-in required
+        "403":
+          description: Administrator access required
+        "404":
+          description: Business not found
 components:
+  securitySchemes:
+    clerkSession:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
+      required: [status]
+    BusinessStatus:
+      type: string
+      enum: [pending, approved, rejected]
+    Account:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [customer, business_owner, admin]
+      required: [userId, email, role]
+    DemoOtpRequestBody:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 9
+          maxLength: 32
+          description: Uzbek number in canonical or human-formatted form; normalized by the server.
+        verificationSessionId:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: '^[A-Za-z0-9_-]{43}$'
+          description: Omit for a new verification flow; provide the returned value to resend within that flow.
+      required: [phone]
+    DemoOtpRequestResponse:
+      type: object
+      properties:
+        demoCode:
+          type: string
+          pattern: '^[0-9]{6}$'
+        verificationSessionId:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: '^[A-Za-z0-9_-]{43}$'
+        serverTime:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        resendAt:
+          type: string
+          format: date-time
+      required: [demoCode, verificationSessionId, serverTime, expiresAt, resendAt]
+    DemoOtpVerifyBody:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 9
+          maxLength: 32
+          description: Uzbek number in canonical or human-formatted form; normalized by the server.
+        verificationSessionId:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: '^[A-Za-z0-9_-]{43}$'
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+      required: [phone, verificationSessionId, code]
+    DemoOtpVerifyResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+      required: [sessionId]
+    DemoOtpError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        retryAt:
+          type: string
+          format: date-time
+      required: [code, message]
+    BusinessInput:
+      type: object
+      properties:
+        ownerName:
+          type: string
+          minLength: 2
+          maxLength: 120
+        name:
+          type: string
+          minLength: 2
+          maxLength: 160
+        category:
+          type: string
+          enum: [Ovqatlanish, Go‘zallik, Sog‘liq, Ta’lim]
+        phone:
+          type: string
+          minLength: 7
+          maxLength: 32
+        address:
+          type: string
+          minLength: 3
+          maxLength: 240
+        description:
+          type: string
+          maxLength: 2000
+        hours:
+          type: string
+          maxLength: 120
+      required: [ownerName, name, category, phone, address, description, hours]
+    BusinessUpdate:
+      type: object
+      properties:
+        ownerName:
+          type: string
+          minLength: 2
+          maxLength: 120
+        name:
+          type: string
+          minLength: 2
+          maxLength: 160
+        category:
+          type: string
+          enum: [Ovqatlanish, Go‘zallik, Sog‘liq, Ta’lim]
+        phone:
+          type: string
+          minLength: 7
+          maxLength: 32
+        address:
+          type: string
+          minLength: 3
+          maxLength: 240
+        description:
+          type: string
+          maxLength: 2000
+        hours:
+          type: string
+          maxLength: 120
+    BusinessReview:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected]
+        adminNote:
+          type: string
+          maxLength: 1000
+      required: [status]
+    BusinessRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerId:
+          type: string
+        ownerName:
+          type: string
+        ownerEmail:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Ovqatlanish, Go‘zallik, Sog‘liq, Ta’lim]
+        phone:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        hours:
+          type: string
+        status:
+          $ref: "#/components/schemas/BusinessStatus"
+        adminNote:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
+        - id
+        - ownerId
+        - ownerName
+        - ownerEmail
+        - name
+        - category
+        - phone
+        - address
+        - description
+        - hours
         - status
+        - adminNote
+        - createdAt
+        - updatedAt
+    BusinessRecordList:
+      type: array
+      items:
+        $ref: "#/components/schemas/BusinessRecord"
+    PublicBusiness:
+      type: object
+      properties:
+        id:
+          type: string
+        ownerName:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Ovqatlanish, Go‘zallik, Sog‘liq, Ta’lim]
+        phone:
+          type: string
+        address:
+          type: string
+        description:
+          type: string
+        hours:
+          type: string
+      required: [id, ownerName, name, category, phone, address, description, hours]
+    PublicBusinessList:
+      type: array
+      items:
+        $ref: "#/components/schemas/PublicBusiness"
+    AdminDashboard:
+      type: object
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        recent:
+          $ref: "#/components/schemas/BusinessRecordList"
+      required: [total, pending, approved, rejected, recent]
+    BookingStatus:
+      type: string
+      enum: [pending, accepted, declined]
+    PushPlatform:
+      type: string
+      enum: [ios, android]
+    BookingInput:
+      type: object
+      properties:
+        businessId:
+          type: string
+          minLength: 1
+        serviceName:
+          type: string
+          minLength: 1
+          maxLength: 160
+        startsAt:
+          type: string
+          format: date-time
+        customerNote:
+          type: string
+          maxLength: 1000
+      required: [businessId, serviceName, startsAt]
+    BookingStatusChange:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [accepted, declined]
+        ownerNote:
+          type: string
+          maxLength: 1000
+      required: [status]
+    BookingRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        businessId:
+          type: string
+        businessName:
+          type: string
+        serviceName:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/BookingStatus"
+        customerNote:
+          type: ["string", "null"]
+        ownerNote:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - businessId
+        - businessName
+        - serviceName
+        - startsAt
+        - status
+        - customerNote
+        - ownerNote
+        - createdAt
+        - updatedAt
+    BookingRecordList:
+      type: array
+      items:
+        $ref: "#/components/schemas/BookingRecord"
+    PushTokenInput:
+      type: object
+      properties:
+        expoPushToken:
+          type: string
+          pattern: '^(Expo|Exponent)PushToken\[[^\]]+\]$'
+        platform:
+          $ref: "#/components/schemas/PushPlatform"
+      required: [expoPushToken, platform]
+    PushTokenDeleteInput:
+      type: object
+      properties:
+        expoPushToken:
+          type: string
+          pattern: '^(Expo|Exponent)PushToken\[[^\]]+\]$'
+      required: [expoPushToken]
+    PushTokenRegistration:
+      type: object
+      properties:
+        registered:
+          type: boolean
+      required: [registered]
+    PushTokenDeletion:
+      type: object
+      properties:
+        removed:
+          type: boolean
+      required: [removed]
 
