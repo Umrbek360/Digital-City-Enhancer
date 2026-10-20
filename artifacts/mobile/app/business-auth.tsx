@@ -959,12 +959,24 @@ function getDemoOtpErrorMessage(error: unknown): string {
       }
       if (code === 'ACCOUNT_AMBIGUOUS') return 'Bu raqam bir nechta hisobga ulangan. Email orqali kiring.';
       const message = (data as { message?: unknown }).message;
-      if (typeof message === 'string') return message;
+      if (typeof message === 'string') {
+        return isNetworkFailureMessage(message)
+          ? 'Server bilan aloqa o‘rnatilmadi. Internetni tekshirib, qayta urinib ko‘ring.'
+          : message;
+      }
     }
     const fallback = (error as { message?: unknown }).message;
-    if (typeof fallback === 'string') return fallback;
+    if (typeof fallback === 'string') {
+      return isNetworkFailureMessage(fallback)
+        ? 'Server bilan aloqa o‘rnatilmadi. Internetni tekshirib, qayta urinib ko‘ring.'
+        : fallback;
+    }
   }
   return 'Demo orqali kirib bo‘lmadi. Qayta urinib ko‘ring.';
+}
+
+function isNetworkFailureMessage(message: string): boolean {
+  return /failed to fetch|network request failed|networkerror/i.test(message);
 }
 
 function Field({
