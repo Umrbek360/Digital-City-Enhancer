@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkLoaded, ClerkLoading, ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,7 +15,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/dm-sans';
 import { Stack } from 'expo-router';
-import { Platform } from 'react-native';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
@@ -109,18 +109,41 @@ export default function RootLayout() {
     >
       <SafeAreaProvider>
         <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <ClerkLoaded>
+          <ClerkLoading>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#F5F6FA',
+              }}
+              accessibilityRole="progressbar"
+            >
+              <ActivityIndicator color="#329477" />
+              <Text
+                style={{
+                  marginTop: 12,
+                  color: '#75808F',
+                  fontFamily: fontsLoaded ? 'Inter_400Regular' : undefined,
+                  fontSize: 14,
+                }}
+              >
+                Hisob tekshirilmoqda…
+              </Text>
+            </View>
+          </ClerkLoading>
+          <ClerkLoaded>
+            <QueryClientProvider client={queryClient}>
               <ClerkApiBridge />
-            </ClerkLoaded>
-            <CityProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </CityProvider>
-          </QueryClientProvider>
+              <CityProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </CityProvider>
+            </QueryClientProvider>
+          </ClerkLoaded>
         </ErrorBoundary>
       </SafeAreaProvider>
     </ClerkProvider>
